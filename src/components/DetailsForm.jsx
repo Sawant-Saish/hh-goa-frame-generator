@@ -5,50 +5,90 @@ import { builderClass } from "../utils/identity.js";
 const fieldLabelStyle = {
   display: "block",
   fontSize: 11,
-  fontWeight: 700,
-  letterSpacing: "0.08em",
-  color: COLORS.green,
-  marginBottom: 6,
-  marginTop: 12,
+  fontWeight: 800,
+  color: "inherit",
+  opacity: 0.95,
+  marginBottom: 4,
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
 };
 
 const inputStyle = {
   width: "100%",
-  padding: "10px 12px",
-  borderRadius: 10,
-  border: "2px solid rgba(15,42,27,0.15)",
+  padding: "9px 12px",
+  borderRadius: 8,
+  border: `2px solid ${COLORS.green}`,
   fontFamily: "'JetBrains Mono', monospace",
-  fontSize: 14,
-  color: COLORS.ink,
-  background: "#fff",
+  fontSize: 13,
+  fontWeight: 700,
+  color: "#091D14",
+  background: "#FFFFFF",
+  boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
 };
 
-export default function DetailsForm({ name, stack, onNameChange, onStackChange }) {
+export default function DetailsForm({
+  mode,
+  activeSlotIndex,
+  slots,
+  soloName,
+  soloStack,
+  onMemberNameChange,
+  onMemberStackChange,
+  onSoloNameChange,
+  onSoloStackChange,
+}) {
+  const isTeam = mode === "team";
+  const currentSlotIndex = typeof activeSlotIndex === "number" ? activeSlotIndex : 0;
+  const currentSlot = slots[currentSlotIndex] || {};
+
+  const nameValue = isTeam ? currentSlot.name || "" : soloName;
+  const stackValue = isTeam ? currentSlot.stack || "" : soloStack;
+
+  const handleNameChange = (val) => {
+    if (isTeam) {
+      onMemberNameChange(currentSlotIndex, val);
+    } else {
+      onSoloNameChange(val);
+    }
+  };
+
+  const handleStackChange = (val) => {
+    if (isTeam) {
+      onMemberStackChange(currentSlotIndex, val);
+    } else {
+      onSoloStackChange(val);
+    }
+  };
+
   return (
-    <>
-      <label style={fieldLabelStyle}>Name</label>
-      <input
-        className="hhg-input"
-        style={inputStyle}
-        placeholder="e.g. Saish"
-        value={name}
-        onChange={(e) => onNameChange(e.target.value)}
-        maxLength={28}
-      />
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <div>
+          <label style={fieldLabelStyle}>
+            {isTeam ? `M0${currentSlotIndex + 1} Name` : "Builder Name"}
+          </label>
+          <input
+            className="hhg-input"
+            style={inputStyle}
+            placeholder={isTeam ? `Member ${currentSlotIndex + 1}` : "e.g. Saish"}
+            value={nameValue}
+            onChange={(e) => handleNameChange(e.target.value)}
+            maxLength={22}
+          />
+        </div>
 
-      <label style={fieldLabelStyle}>Stack</label>
-      <input
-        className="hhg-input"
-        style={inputStyle}
-        placeholder="e.g. React, Node, ML"
-        value={stack}
-        onChange={(e) => onStackChange(e.target.value)}
-        maxLength={60}
-      />
-
-      <div style={{ marginTop: 14, fontSize: 13, color: "rgba(15,42,27,0.7)" }}>
-        Builder class: <strong style={{ color: COLORS.pink }}>{builderClass(stack)}</strong>
+        <div>
+          <label style={fieldLabelStyle}>Tech Stack / Role</label>
+          <input
+            className="hhg-input"
+            style={inputStyle}
+            placeholder="React, Node, ML"
+            value={stackValue}
+            onChange={(e) => handleStackChange(e.target.value)}
+            maxLength={40}
+          />
+        </div>
       </div>
-    </>
+    </div>
   );
 }

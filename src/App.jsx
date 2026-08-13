@@ -1,159 +1,286 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { COLORS, MAX_TEAM_SLOTS } from "./constants.js";
+import { COLORS, FORMATS, MAX_TEAM_SLOTS } from "./constants.js";
 import { loadImage } from "./utils/canvasDraw.js";
-import { detectFaces, preloadFaceModel } from "./utils/faceDetection.js";
+import { generateTeamCode } from "./utils/identity.js";
 import { useFrameRenderer } from "./hooks/useFrameRenderer.js";
 import ControlPanel from "./components/ControlPanel.jsx";
 import PreviewCanvas from "./components/PreviewCanvas.jsx";
+import ShareModal from "./components/ShareModal.jsx";
 
-const NO_FACE_MESSAGE = "No human face detected in that photo. Upload a clear photo of a face to continue.";
-const READ_ERROR_MESSAGE = "Couldn't read that image. Try a different file.";
+import PosterShowcaseModal from "./components/PosterShowcaseModal.jsx";
 
-function resizeToLength(arr, length, fill = null) {
-  const next = arr.slice(0, length);
-  while (next.length < length) next.push(fill);
-  return next;
-}
+const createEmptySlot = (index) => ({
+  src: null,
+  img: null,
+  zoom: 1,
+  offsetX: 0,
+  offsetY: 0,
+  name: index === 0 ? "" : `Member ${index + 1}`,
+  stack: "",
+});
 
 export default function App() {
+  const [format, setFormat] = useState(FORMATS.BADGE); // FORMATS.PFP | FORMATS.BADGE
   const [mode, setMode] = useState("solo"); // "solo" | "team"
-  const [slots, setSlots] = useState([null]);
-  const [verifying, setVerifying] = useState([false]);
-  const [errors, setErrors] = useState([null]);
-  const [name, setName] = useState("");
-  const [stack, setStack] = useState("");
+  const [teamSize, setTeamSize] = useState(3); // 1, 2, or 3 members max
+  const [activeSlotIndex, setActiveSlotIndex] = useState(0); // 0, 1, 2, or "combined"
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  
+  const [teamName, setTeamName] = useState("CYBER BUILDERS");
+  const [teamCode, setTeamCode] = useState(() => generateTeamCode("GOA"));
+  
+  const [soloName, setSoloName] = useState("");
+  const [soloStack, setSoloStack] = useState("");
 
-  const maxSlots = mode === "team" ? MAX_TEAM_SLOTS : 1;
+  const [slots, setSlots] = useState(() => [
+    createEmptySlot(0),
+    createEmptySlot(1),
+    createEmptySlot(2),
+  ]);
 
-  // Warm up the face-detection model in the background so the first
-  // upload doesn't stall on a cold model load.
+  // Read URL query params on mount for shareable Team Links
   useEffect(() => {
-    preloadFaceModel();
+    const params = new URLSearchParams(window.location.search);
+    const urlTeam = params.get("team");
+    const urlName = params.get("name");
+
+    if (urlTeam) {
+      setMode("team");
+      setTeamCode(urlTeam.toUpperCase());
+      if (urlName) setTeamName(urlName);
+    }
   }, []);
-
-  // Resize the per-slot arrays to match the active mode, preserving
-  // any photos/state already in the kept slots.
-  useEffect(() => {
-    setSlots((prev) => resizeToLength(prev, maxSlots));
-    setVerifying((prev) => resizeToLength(prev, maxSlots, false));
-    setErrors((prev) => resizeToLength(prev, maxSlots));
-  }, [maxSlots]);
-
-  const setAt = (setter) => (index, value) =>
-    setter((prev) => {
-      const next = [...prev];
-      next[index] = value;
-      return next;
-    });
 
   const handleFileSelected = useCallback(async (index, file) => {
     if (!file) return;
-
-    setAt(setErrors)(index, null);
-    setAt(setVerifying)(index, true);
-
-    let src;
     try {
-      src = URL.createObjectURL(file);
+      const src = URL.createObjectURL(file);
       const img = await loadImage(src);
-      const faces = await detectFaces(img);
 
-      if (faces.length === 0) {
-        URL.revokeObjectURL(src);
-        setAt(setErrors)(index, NO_FACE_MESSAGE);
-        return;
-      }
-
-      // Face-only, auto-cropped: store the top face so renderFrame
-      // can crop/center on it instead of the image's raw center.
-      setAt(setSlots)(index, { src, img, face: faces[0] });
+      setSlots((prev) => {
+        const next = [...prev];
+        next[index] = {
+          ...next[index],
+          src,
+          img,
+          zoom: 1,
+          offsetX: 0,
+          offsetY: 0,
+        };
+        return next;
+      });
     } catch (err) {
-      if (src) URL.revokeObjectURL(src);
-      setAt(setErrors)(index, READ_ERROR_MESSAGE);
-    } finally {
-      setAt(setVerifying)(index, false);
+      console.error("Failed to load image", err);
     }
   }, []);
 
   const handleClearSlot = useCallback((index) => {
-    setAt(setSlots)(index, null);
-    setAt(setErrors)(index, null);
+    setSlots((prev) => {
+      const next = [...prev];
+      next[index] = {
+        ...createEmptySlot(index),
+      };
+      return next;
+    });
   }, []);
 
-  const { canvasRef, rendering, ready, download } = useFrameRenderer({ slots, name, stack });
+  const handleZoomChange = useCallback((index, zoom) => {
+    setSlots((prev) => {
+      const next = [...prev];
+      if (next[index]) next[index] = { ...next[index], zoom };
+      return next;
+    });
+  }, []);
+
+  const handleOffsetXChange = useCallback((index, offsetX) => {
+    setSlots((prev) => {
+      const next = [...prev];
+      if (next[index]) next[index] = { ...next[index], offsetX };
+      return next;
+    });
+  }, []);
+
+  const handleOffsetYChange = useCallback((index, offsetY) => {
+    setSlots((prev) => {
+      const next = [...prev];
+      if (next[index]) next[index] = { ...next[index], offsetY };
+      return next;
+    });
+  }, []);
+
+  const handleResetAdjuster = useCallback((index) => {
+    setSlots((prev) => {
+      const next = [...prev];
+      if (next[index]) next[index] = { ...next[index], zoom: 1, offsetX: 0, offsetY: 0 };
+      return next;
+    });
+  }, []);
+
+  const handleMemberNameChange = useCallback((index, name) => {
+    setSlots((prev) => {
+      const next = [...prev];
+      if (next[index]) next[index] = { ...next[index], name };
+      return next;
+    });
+  }, []);
+
+  const handleMemberStackChange = useCallback((index, stack) => {
+    setSlots((prev) => {
+      const next = [...prev];
+      if (next[index]) next[index] = { ...next[index], stack };
+      return next;
+    });
+  }, []);
+
+  // Slice slots dynamically based on active teamSize
+  const activeSlots = slots.slice(0, teamSize);
+
+  const {
+    canvasRef,
+    rendering,
+    ready,
+    downloadCurrent,
+    downloadAllTeamCards,
+  } = useFrameRenderer({
+    format,
+    mode,
+    slots: activeSlots,
+    activeSlotIndex,
+    teamName,
+    teamCode,
+    soloName,
+    soloStack,
+  });
 
   return (
     <div
       style={{
         minHeight: "100vh",
-        background: `linear-gradient(180deg, ${COLORS.green} 0%, ${COLORS.greenDeep} 100%)`,
+        background: `radial-gradient(circle at 50% 0%, #0B6E3E 0%, ${COLORS.greenDeep} 75%)`,
         color: COLORS.cream,
-        padding: "40px 24px 60px",
+        padding: "30px 16px 60px",
         fontFamily: "'JetBrains Mono', monospace",
       }}
     >
+      {/* Header Badge */}
       <div
         style={{
           color: COLORS.gold,
-          fontSize: 13,
-          letterSpacing: "0.14em",
-          fontWeight: 700,
+          fontSize: 12,
+          letterSpacing: "0.18em",
+          fontWeight: 800,
           textAlign: "center",
+          textTransform: "uppercase",
         }}
       >
-        BUILD THIS · TASK #1
+        🌴 HH GOA 2026 · NO CAP BUILDER BADGE GENERATOR
       </div>
+
       <h1
         style={{
-          fontFamily: "'Playfair Display', Georgia, serif",
-          fontSize: "clamp(32px, 5vw, 52px)",
+          fontFamily: "Georgia, 'Playfair Display', serif",
+          fontSize: "clamp(30px, 4.5vw, 52px)",
           textAlign: "center",
-          margin: "8px 0 6px",
+          margin: "6px 0 8px",
           color: COLORS.cream,
+          textShadow: "0 4px 20px rgba(0,0,0,0.4)",
         }}
       >
-        HH Goa Frame Generator
+        Flex Your Stack. Claim Your Aura. ✨
       </h1>
+
       <p
         style={{
           textAlign: "center",
-          color: "rgba(251,243,222,0.7)",
+          color: "rgba(251,243,222,0.88)",
           fontSize: 14,
-          maxWidth: 520,
-          margin: "0 auto 32px",
-          lineHeight: 1.5,
+          maxWidth: 640,
+          margin: "0 auto 28px",
+          lineHeight: 1.6,
         }}
       >
-        Upload a photo, it auto-fits the frame — no cropping. Add your name and stack, download, and share.
+        Generate your official <strong>HH Goa 2026 Builder Badge</strong> with scannable QR verification,
+        funky tech titles, and polite Gen-Z roasts. Built for <strong>Solo Builders</strong> & <strong>Squads of 1 to 3</strong>! 🚀
       </p>
 
+      {/* Main Container */}
       <div
         style={{
           display: "flex",
-          gap: 28,
-          maxWidth: 980,
+          gap: 24,
+          maxWidth: 960,
           margin: "0 auto",
           flexWrap: "wrap",
           justifyContent: "center",
+          alignItems: "flex-start",
         }}
       >
         <ControlPanel
           mode={mode}
           onModeChange={setMode}
+          format={format}
+          onFormatChange={setFormat}
+          activeSlotIndex={activeSlotIndex}
+          onSelectSlot={setActiveSlotIndex}
           slots={slots}
-          verifying={verifying}
-          errors={errors}
           onFileSelected={handleFileSelected}
           onClearSlot={handleClearSlot}
-          name={name}
-          stack={stack}
-          onNameChange={setName}
-          onStackChange={setStack}
+          onZoomChange={handleZoomChange}
+          onOffsetXChange={handleOffsetXChange}
+          onOffsetYChange={handleOffsetYChange}
+          onResetAdjuster={handleResetAdjuster}
+          teamName={teamName}
+          onTeamNameChange={setTeamName}
+          teamCode={teamCode}
+          onTeamCodeChange={setTeamCode}
+          teamSize={teamSize}
+          onTeamSizeChange={setTeamSize}
+          soloName={soloName}
+          soloStack={soloStack}
+          onMemberNameChange={handleMemberNameChange}
+          onMemberStackChange={handleMemberStackChange}
+          onSoloNameChange={setSoloName}
+          onSoloStackChange={setSoloStack}
           ready={ready}
-          onDownload={download}
+          onDownloadCurrent={downloadCurrent}
+          onDownloadAllTeamCards={downloadAllTeamCards}
+          onOpenShareModal={() => setIsShareModalOpen(true)}
         />
-        <PreviewCanvas canvasRef={canvasRef} rendering={rendering} />
+
+        <PreviewCanvas
+          canvasRef={canvasRef}
+          rendering={rendering}
+          format={format}
+          mode={mode}
+          activeSlotIndex={activeSlotIndex}
+          teamCode={teamCode}
+        />
       </div>
+
+      {/* Share on X Interactive Modal */}
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        mode={mode}
+        activeSlotIndex={activeSlotIndex}
+        slots={activeSlots}
+        teamName={teamName}
+        teamCode={teamCode}
+        soloName={soloName}
+        onDownloadCurrent={downloadCurrent}
+      />
+
+      {/* Full-Screen Poster Showcase Modal with Heavy Drop Shadow & X Post Option */}
+      <PosterShowcaseModal
+        isOpen={activeSlotIndex === "combined"}
+        onClose={() => setActiveSlotIndex(0)}
+        teamName={teamName}
+        teamCode={teamCode}
+        teamSize={teamSize}
+        canvasRef={canvasRef}
+        onDownloadPoster={downloadCurrent}
+        onOpenShareModal={() => setIsShareModalOpen(true)}
+      />
     </div>
   );
 }

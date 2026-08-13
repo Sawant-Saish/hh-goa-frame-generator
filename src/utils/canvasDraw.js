@@ -4,6 +4,7 @@
 export function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
     img.onerror = reject;
     img.src = src;
@@ -11,60 +12,40 @@ export function loadImage(src) {
 }
 
 /**
- * Draws `img` into the target rect using "object-fit: cover" behavior:
- * scales to fill the rect and center-crops the overflow. This is what
- * lets any uploaded photo fit the frame with no manual cropping step.
+ * Draws `img` into the target rect using "object-fit: cover" behavior with
+ * optional zoom scale and pan offset (offsetX, offsetY in percentage -50 to 50).
  */
-export function drawCover(ctx, img, x, y, w, h) {
-  const scale = Math.max(w / img.width, h / img.height);
+export function drawCover(ctx, img, x, y, w, h, zoom = 1, offsetX = 0, offsetY = 0) {
+  if (!img) return;
+  
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+
+  const baseScale = Math.max(w / img.width, h / img.height);
+  const scale = baseScale * Math.max(1, zoom);
+  
   const sw = w / scale;
   const sh = h / scale;
-  const sx = (img.width - sw) / 2;
-  const sy = (img.height - sh) / 2;
+  
+  // Calculate center with pan offsets
+  const maxPanX = (img.width - sw) / 2;
+  const maxPanY = (img.height - sh) / 2;
+  
+  const panXVal = (offsetX / 50) * maxPanX;
+  const panYVal = (offsetY / 50) * maxPanY;
+  
+  const sx = Math.max(0, Math.min(img.width - sw, (img.width - sw) / 2 + panXVal));
+  const sy = Math.max(0, Math.min(img.height - sh, (img.height - sh) / 2 + panYVal));
+
   ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
-}
-
-/**
- * Draws `img` into the target rect, cropping around a detected face
- * rather than the image's geometric center. This is what makes the
- * ID card framing consistent (face roughly centered, room for
- * shoulders below) no matter where the subject sits in the original
- * photo or what its aspect ratio is.
- *
- * `face` is a bounding box in the image's natural pixel coordinates:
- * { x, y, width, height }, as returned by detectFaces().
- */
-export function drawFaceCover(ctx, img, face, x, y, w, h) {
-  const targetAspect = w / h;
-
-  // Frame the crop relative to face size: tall enough to read as a
-  // head-and-shoulders portrait rather than a tight face crop.
-  const PAD_FACTOR = 2.6;
-  let cropH = Math.min(face.height * PAD_FACTOR, img.height);
-  let cropW = cropH * targetAspect;
-  if (cropW > img.width) {
-    cropW = img.width;
-    cropH = cropW / targetAspect;
-  }
-
-  const faceCenterX = face.x + face.width / 2;
-  // Anchor slightly above the face's vertical center so there's more
-  // breathing room below the chin than above the hairline.
-  const faceCenterY = face.y + face.height * 0.42;
-
-  let sx = faceCenterX - cropW / 2;
-  let sy = faceCenterY - cropH / 2;
-
-  sx = Math.max(0, Math.min(sx, img.width - cropW));
-  sy = Math.max(0, Math.min(sy, img.height - cropH));
-
-  ctx.drawImage(img, sx, sy, cropW, cropH, x, y, w, h);
+  ctx.restore();
 }
 
 /**
  * Draws one L-shaped corner bracket (viewfinder/terminal motif) at
- * (x, y), rotated by `rot` radians so the same function covers all
- * four corners.
+ * (x, y), rotated by `rot` radians.
  */
 export function drawBracket(ctx, x, y, size, rot, color) {
   ctx.save();
@@ -84,24 +65,80 @@ export function drawBracket(ctx, x, y, size, rot, color) {
   ctx.restore();
 }
 
+import QRCode from "qrcode";
+
 /**
- * Lays out N photo slots into a grid rect: 1 slot fills it, 2 slots
- * sit side by side, 3-4 slots form a 2x2 grid.
+ * Generates a real, scannable 2D QR Code matrix onto the canvas context.
  */
-export function gridLayout(rect, count, gap = 8) {
-  if (count <= 1) return [{ x: rect.x, y: rect.y, w: rect.w, h: rect.h }];
-  const cols = count <= 2 ? count : 2;
-  const rows = Math.ceil(count / cols);
-  const cw = (rect.w - gap * (cols - 1)) / cols;
-  const ch = (rect.h - gap * (rows - 1)) / rows;
-  return Array.from({ length: count }, (_, i) => {
-    const col = i % cols;
-    const row = Math.floor(i / cols);
-    return {
-      x: rect.x + col * (cw + gap),
-      y: rect.y + row * (ch + gap),
-      w: cw,
-      h: ch,
-    };
-  });
+export function drawQRCodeStamp(ctx, x, y, size, qrText, mainColor = "#091D14", bgColor = "#FBF3DE") {
+  ctx.save();
+  // Outer frame & background
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(x, y, size, size);
+  ctx.strokeStyle = mainColor;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, y, size, size);
+
+  try {
+    const textToEncode = qrText || "https://hhgoa.com";
+    const qr = QRCode.create(textToEncode, { errorCorrectionLevel: "M" });
+    const numCells = qr.modules.size;
+    const padding = 2; // quiet zone in cells
+    const totalGrid = numCells + padding * 2;
+    const cellSize = size / totalGrid;
+
+    ctx.fillStyle = mainColor;
+    for (let row = 0; row < numCells; row++) {
+      for (let col = 0; col < numCells; col++) {
+        if (qr.modules.get(row, col)) {
+          ctx.fillRect(
+            x + (col + padding) * cellSize,
+            y + (row + padding) * cellSize,
+            cellSize + 0.3, // fill subpixel gaps cleanly
+            cellSize + 0.3
+          );
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Failed to generate QR Code stamp:", err);
+  }
+
+  ctx.restore();
 }
+
+/**
+ * Lays out N photo slots into a poster grid rect: 1 slot fills it, 2 slots
+ * sit side-by-side, 3 slots form 3 vertical columns, 4 slots form a 2x2 grid.
+ */
+export function gridLayout(rect, count, gap = 16) {
+  if (count <= 1) return [{ x: rect.x, y: rect.y, w: rect.w, h: rect.h }];
+
+  if (count === 2) {
+    const cw = (rect.w - gap) / 2;
+    return [
+      { x: rect.x, y: rect.y, w: cw, h: rect.h },
+      { x: rect.x + cw + gap, y: rect.y, w: cw, h: rect.h },
+    ];
+  }
+
+  if (count === 3) {
+    const cw = (rect.w - gap * 2) / 3;
+    return [
+      { x: rect.x, y: rect.y, w: cw, h: rect.h },
+      { x: rect.x + cw + gap, y: rect.y, w: cw, h: rect.h },
+      { x: rect.x + (cw + gap) * 2, y: rect.y, w: cw, h: rect.h },
+    ];
+  }
+
+  // 4 or default: 2x2 grid
+  const cw = (rect.w - gap) / 2;
+  const ch = (rect.h - gap) / 2;
+  return [
+    { x: rect.x, y: rect.y, w: cw, h: ch },
+    { x: rect.x + cw + gap, y: rect.y, w: cw, h: ch },
+    { x: rect.x, y: rect.y + ch + gap, w: cw, h: ch },
+    { x: rect.x + cw + gap, y: rect.y + ch + gap, w: cw, h: ch },
+  ];
+}
+

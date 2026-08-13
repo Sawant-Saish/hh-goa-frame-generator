@@ -12,17 +12,33 @@ body,
 
 body {
   font-family: "JetBrains Mono", monospace;
+  background-color: #062819;
+  overflow-x: hidden;
 }
 
+/* Custom Compact Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(6, 40, 25, 0.4);
+}
+::-webkit-scrollbar-thumb {
+  background: #E8127A;
+  border-radius: 999px;
+}
+
+/* Interactive Buttons */
 .hhg-btn {
-  transition: transform 0.12s ease, filter 0.12s ease;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.15s ease, box-shadow 0.15s ease;
 }
 .hhg-btn:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.06);
+  transform: translateY(-2px) scale(1.02);
+  filter: brightness(1.08);
 }
 .hhg-btn:active {
-  transform: translateY(0);
+  transform: translateY(0) scale(0.98);
 }
 .hhg-btn:disabled {
   opacity: 0.5;
@@ -31,12 +47,16 @@ body {
 }
 
 .hhg-input:focus {
-  outline: 2px solid var(--hhg-pink, #e8127a);
-  outline-offset: 2px;
+  outline: 2px solid #E8127A;
+  outline-offset: 1px;
 }
 
+.hhg-slot {
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
 .hhg-slot:hover {
-  border-color: var(--hhg-pink, #e8127a) !important;
+  border-color: #E8127A !important;
+  transform: scale(1.03);
 }
 
 .hhg-spin {
@@ -50,4 +70,61 @@ body {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* 3D Perspective Card Swapping Animations */
+.perspective-container {
+  perspective: 1200px;
+  perspective-origin: center;
+}
+
+.card-deck-stack {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  margin-bottom: 12px;
+}
+
+.card-swap-anim {
+  animation: cardSwap 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes cardSwap {
+  0% {
+    transform: translateX(0) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  40% {
+    transform: translateX(-90px) rotate(-12deg) scale(0.92);
+    opacity: 0.7;
+    z-index: 10;
+  }
+  100% {
+    transform: translateX(0) scale(1) rotate(0deg);
+    opacity: 1;
+    z-index: 1;
+  }
+}
+
+.canvas-swap-anim {
+  animation: canvasSwap 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes canvasSwap {
+  0% {
+    transform: rotateY(-18deg) scale(0.95);
+    filter: brightness(1.2);
+  }
+  50% {
+    transform: rotateY(12deg) scale(1.03);
+  }
+  100% {
+    transform: rotateY(0deg) scale(1);
+    filter: brightness(1);
+  }
+}
+
+/* Glow Accent for Active Card */
+.active-card-glow {
+  box-shadow: 0 0 25px rgba(232, 18, 122, 0.35), 0 10px 30px rgba(0, 0, 0, 0.25);
 }
