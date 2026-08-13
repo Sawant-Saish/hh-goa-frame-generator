@@ -8,6 +8,8 @@ export default function TeamCodeManager({
   onTeamNameChange,
   teamCode,
   onTeamCodeChange,
+  teamSize = 4,
+  onTeamSizeChange,
 }) {
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -40,11 +42,11 @@ export default function TeamCodeManager({
   return (
     <div
       style={{
-        background: "rgba(11, 110, 62, 0.08)",
+        background: "rgba(11, 110, 62, 0.12)",
         borderRadius: 10,
         padding: "8px 12px",
         marginBottom: 12,
-        border: "1px solid rgba(11, 110, 62, 0.2)",
+        border: "1px solid rgba(11, 110, 62, 0.25)",
       }}
     >
       {/* Compact Summary Header Bar */}
@@ -60,8 +62,8 @@ export default function TeamCodeManager({
       >
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <Users size={14} color={COLORS.green} />
-          <span style={{ fontSize: 11, fontWeight: 800, color: COLORS.ink }}>
-            TEAM: {teamName.toUpperCase().slice(0, 14)}
+          <span style={{ fontSize: 11, fontWeight: 800, color: "inherit" }}>
+            TEAM: {teamName.toUpperCase().slice(0, 12)}
           </span>
           <span
             style={{
@@ -73,7 +75,7 @@ export default function TeamCodeManager({
               borderRadius: 4,
             }}
           >
-            {teamCode}
+            {teamCode} ({teamSize} Members)
           </span>
         </div>
 
@@ -100,16 +102,50 @@ export default function TeamCodeManager({
             {copied ? "Copied!" : "Copy Link"}
           </button>
 
-          {expanded ? <ChevronUp size={16} color={COLORS.ink} /> : <ChevronDown size={16} color={COLORS.ink} />}
+          {expanded ? <ChevronUp size={16} color="inherit" /> : <ChevronDown size={16} color="inherit" />}
         </div>
       </div>
 
       {/* Expanded Team Config Form */}
       {expanded && (
-        <div style={{ marginTop: 10, paddingTop: 8, borderTop: "1px dashed rgba(9, 29, 20, 0.15)" }}>
+        <div style={{ marginTop: 10, paddingTop: 8, borderTop: "1px dashed rgba(9, 29, 20, 0.2)" }}>
+          {/* Dynamic Team Size Selector */}
+          <div style={{ marginBottom: 10 }}>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 800, opacity: 0.9, marginBottom: 4 }}>
+              SELECT TEAM SIZE ({teamSize} BUILDERS)
+            </label>
+            <div style={{ display: "flex", gap: 4 }}>
+              {[1, 2, 3, 4].map((num) => {
+                const isActive = teamSize === num;
+                return (
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => onTeamSizeChange && onTeamSizeChange(num)}
+                    style={{
+                      flex: 1,
+                      padding: "5px 4px",
+                      borderRadius: 6,
+                      border: isActive ? `1.5px solid ${COLORS.gold}` : "1px solid rgba(0,0,0,0.15)",
+                      background: isActive ? COLORS.pink : "rgba(255,255,255,0.1)",
+                      color: isActive ? "#FFFFFF" : "inherit",
+                      fontWeight: 800,
+                      fontSize: 11,
+                      fontFamily: "'JetBrains Mono', monospace",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                    }}
+                  >
+                    {num} {num === 1 ? "Member" : "Members"}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
             <div style={{ flex: 1 }}>
-              <label style={{ display: "block", fontSize: 9, fontWeight: 700, color: "rgba(9, 29, 20, 0.6)", marginBottom: 2 }}>
+              <label style={{ display: "block", fontSize: 9, fontWeight: 700, opacity: 0.8, marginBottom: 2 }}>
                 TEAM NAME
               </label>
               <input
@@ -133,7 +169,7 @@ export default function TeamCodeManager({
             </div>
 
             <div style={{ flex: 1 }}>
-              <label style={{ display: "block", fontSize: 9, fontWeight: 700, color: "rgba(9, 29, 20, 0.6)", marginBottom: 2 }}>
+              <label style={{ display: "block", fontSize: 9, fontWeight: 700, opacity: 0.8, marginBottom: 2 }}>
                 TEAM CODE
               </label>
               <div style={{ display: "flex", gap: 4 }}>
@@ -177,7 +213,7 @@ export default function TeamCodeManager({
             </div>
           </div>
 
-          <p style={{ fontSize: 9, color: "rgba(9,29,20,0.6)", margin: 0 }}>
+          <p style={{ fontSize: 9, opacity: 0.8, margin: 0 }}>
             Send link to teammates so everyone uses the same squad Team ID!
           </p>
         </div>

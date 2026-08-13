@@ -11,68 +11,22 @@ export default function ActionButtons({
   teamName,
   teamCode,
   soloName,
+  teamSize = 4,
   onDownloadCurrent,
   onDownloadAllTeamCards,
+  onOpenShareModal,
 }) {
   const isTeam = mode === "team";
-
-  // Share Single Card to X (Web Share API with PNG file attachment + Auto Download fallback)
-  const handleShareCurrentToX = async () => {
-    let caption = "";
-    let activeName = "builder";
-    if (isTeam) {
-      const activeSlot = slots[activeSlotIndex];
-      activeName = activeSlot?.name || `Member ${typeof activeSlotIndex === "number" ? activeSlotIndex + 1 : 1}`;
-      caption = `Just generated my official HH Goa 2026 Builder Card for Team ${teamName || "Squad"} [ID: ${teamCode}]! 🌴\n\nBuilder: ${activeName}\n\nJoin the squad with ID ${teamCode} at hhgoa.com! #FrameInGoa @HHGoa2026`;
-    } else {
-      activeName = soloName || "Builder";
-      caption = `Just generated my official HH Goa 2026 Builder Badge! Ready to build in Goa. 🌴\n\nBuilder: ${activeName}\nCreate yours at hhgoa.com! #FrameInGoa @HHGoa2026`;
-    }
-
-    const canvas = document.querySelector("canvas");
-
-    // Attempt Native OS Share Sheet with attached PNG image file (Mobile Safari / Android Chrome)
-    if (canvas && navigator.canShare && navigator.share) {
-      try {
-        const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
-        if (blob) {
-          const file = new File([blob], `hh-goa-badge-${teamCode || "builder"}.png`, { type: "image/png" });
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              title: "HH Goa 2026 Builder Badge",
-              text: caption,
-              files: [file],
-            });
-            return;
-          }
-        }
-      } catch (err) {
-        console.log("Web Share fallback to manual share:", err);
-      }
-    }
-
-    // Fallback for Desktop Browsers: Auto-download PNG + Copy Tweet Text + Open X Composer
-    onDownloadCurrent();
-    try {
-      await navigator.clipboard.writeText(caption);
-      alert("📸 Builder Card PNG downloaded to your device & caption copied!\n\nSimply attach the downloaded image file when Twitter/X opens.");
-    } catch (e) {
-      console.log("Clipboard write fallback");
-    }
-
-    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(caption)}`;
-    window.open(url, "_blank");
-  };
 
   const handleShareCurrentToInstagram = async () => {
     let caption = "";
     if (isTeam) {
       const activeSlot = slots[activeSlotIndex];
       const memberName = activeSlot?.name || `Member ${typeof activeSlotIndex === "number" ? activeSlotIndex + 1 : 1}`;
-      caption = `Just generated my official HH Goa 2026 Builder Card for Team ${teamName || "Squad"} [ID: ${teamCode}]! 🌴\n\nBuilder: ${memberName}\n\nJoin the squad with ID ${teamCode} at hhgoa.com! #FrameInGoa @HHGoa2026`;
+      caption = `Just generated my official HH Goa 2026 Builder Card for Team ${teamName || "Squad"} [ID: ${teamCode}]! 🌴\n\nBuilder: ${memberName}\n\nJoin the squad with ID ${teamCode} at hhgoa.com! #HHGoa2026 #FrameInGoa @HHGoa2026`;
     } else {
       const bName = soloName || "Builder";
-      caption = `Just generated my official HH Goa 2026 Graphic! Ready to build in Goa. 🌴\n\nBuilder: ${bName}\nCreate yours at hhgoa.com! #FrameInGoa @HHGoa2026`;
+      caption = `Just generated my official HH Goa 2026 Graphic! Ready to build in Goa. 🌴\n\nBuilder: ${bName}\nCreate yours at hhgoa.com! #HHGoa2026 #FrameInGoa @HHGoa2026`;
     }
 
     onDownloadCurrent();
@@ -91,23 +45,6 @@ export default function ActionButtons({
         alert("Team ID copied to clipboard!");
       });
     }
-  };
-
-  // Share All 4 Squad IDs Together to X
-  const handleShareAll4ToX = async () => {
-    const squadNames = slots.map((s, i) => s?.name || `Member 0${i + 1}`).join(", ");
-    const caption = `Our squad is LOCKED IN for HH Goa 2026! 🚀🌴\n\nTeam: ${teamName || "Cyber Builders"} [Team ID: ${teamCode}]\nSquad Members: ${squadNames}\n\nAll 4 Builder Cards generated at hhgoa.com! #FrameInGoa @HHGoa2026`;
-
-    onDownloadAllTeamCards();
-    try {
-      await navigator.clipboard.writeText(caption);
-      alert("📸 All 4 Squad Cards & Poster PNGs downloaded to your device & caption copied!\n\nAttach the downloaded images when Twitter/X opens.");
-    } catch (e) {
-      // fallback
-    }
-    
-    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(caption)}`;
-    window.open(url, "_blank");
   };
 
   return (
@@ -143,7 +80,7 @@ export default function ActionButtons({
         <button
           type="button"
           className="hhg-btn"
-          onClick={handleShareCurrentToX}
+          onClick={onOpenShareModal}
           style={{
             flex: 1,
             display: "flex",
@@ -203,7 +140,7 @@ export default function ActionButtons({
             padding: "6px 12px",
             borderRadius: 8,
           }}>
-            TEAM ID: {teamCode}
+            TEAM ID: {teamCode} ({teamSize} Members)
           </span>
           <button
             type="button"
@@ -252,13 +189,13 @@ export default function ActionButtons({
               boxShadow: "0 4px 12px rgba(11,110,62,0.3)",
             }}
           >
-            <Layers size={14} /> Download All 4 Cards
+            <Layers size={14} /> Download All {teamSize} Cards
           </button>
 
           <button
             type="button"
             className="hhg-btn"
-            onClick={handleShareAll4ToX}
+            onClick={onOpenShareModal}
             style={{
               flex: 1,
               display: "flex",
@@ -277,11 +214,10 @@ export default function ActionButtons({
               boxShadow: "0 4px 12px rgba(239,193,58,0.3)",
             }}
           >
-            <Share2 size={14} /> Post All 4 to X
+            <Share2 size={14} /> Post Squad to X
           </button>
         </div>
       )}
-
     </div>
   );
 }

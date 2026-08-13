@@ -26,6 +26,8 @@ export default function ControlPanel({
   onTeamNameChange,
   teamCode,
   onTeamCodeChange,
+  teamSize = 4,
+  onTeamSizeChange,
   soloName,
   soloStack,
   onMemberNameChange,
@@ -35,6 +37,7 @@ export default function ControlPanel({
   ready,
   onDownloadCurrent,
   onDownloadAllTeamCards,
+  onOpenShareModal,
 }) {
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem("darkMode");
@@ -83,6 +86,8 @@ export default function ControlPanel({
           onTeamNameChange={onTeamNameChange}
           teamCode={teamCode}
           onTeamCodeChange={onTeamCodeChange}
+          teamSize={teamSize}
+          onTeamSizeChange={onTeamSizeChange}
         />
       )}
 
@@ -96,6 +101,7 @@ export default function ControlPanel({
         onClearSlot={onClearSlot}
         teamCode={teamCode}
         teamName={teamName}
+        teamSize={teamSize}
       />
 
       {/* Member Details Form (Name & Stack) */}
@@ -133,9 +139,11 @@ export default function ControlPanel({
         slots={slots}
         teamName={teamName}
         teamCode={teamCode}
+        teamSize={teamSize}
         soloName={soloName}
         onDownloadCurrent={onDownloadCurrent}
         onDownloadAllTeamCards={onDownloadAllTeamCards}
+        onOpenShareModal={onOpenShareModal}
       />
     </div>
   );

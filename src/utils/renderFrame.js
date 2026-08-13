@@ -182,7 +182,7 @@ function renderCombinedTeamPoster(ctx, { slots, teamName, teamCode }) {
     h: CANVAS_SIZE - BORDER * 2 - 170,
   };
 
-  const rects = gridLayout(gridArea, 4, 16);
+  const rects = gridLayout(gridArea, slots.length, 16);
 
   slots.forEach((slot, i) => {
     const rect = rects[i];

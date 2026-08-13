@@ -12,6 +12,7 @@ export default function CardDeck({
   onClearSlot,
   teamCode,
   teamName,
+  teamSize = 4,
 }) {
   const [animatingIndex, setAnimatingIndex] = useState(null);
 
@@ -28,10 +29,10 @@ export default function CardDeck({
 
   const handlePrev = () => {
     if (isCombined) {
-      handleCardClick(3);
+      handleCardClick(teamSize - 1);
       return;
     }
-    const nextIdx = (currentSlotIndex - 1 + 4) % 4;
+    const nextIdx = (currentSlotIndex - 1 + teamSize) % teamSize;
     handleCardClick(nextIdx);
   };
 
@@ -40,17 +41,19 @@ export default function CardDeck({
       handleCardClick(0);
       return;
     }
-    const nextIdx = (currentSlotIndex + 1) % 4;
+    const nextIdx = (currentSlotIndex + 1) % teamSize;
     handleCardClick(nextIdx);
   };
 
+  const activeSlots = slots.slice(0, teamSize);
+
   return (
     <div style={{ marginBottom: 14 }}>
-      {/* Team Member Tabs & 4-in-1 Quick Nav Bar */}
+      {/* Team Member Tabs & Quick Nav Bar */}
       {isTeam && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
           <div style={{ display: "flex", gap: 4 }}>
-            {[0, 1, 2, 3].map((i) => {
+            {activeSlots.map((_, i) => {
               const isActive = activeSlotIndex === i;
               const hasPhoto = Boolean(slots[i] && slots[i].img);
               return (
@@ -95,7 +98,7 @@ export default function CardDeck({
               gap: 4,
             }}
           >
-            <Grid size={12} /> 4-in-1 Poster
+            <Grid size={12} /> {teamSize}-in-1 Poster
           </button>
         </div>
       )}

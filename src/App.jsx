@@ -5,6 +5,7 @@ import { generateTeamCode } from "./utils/identity.js";
 import { useFrameRenderer } from "./hooks/useFrameRenderer.js";
 import ControlPanel from "./components/ControlPanel.jsx";
 import PreviewCanvas from "./components/PreviewCanvas.jsx";
+import ShareModal from "./components/ShareModal.jsx";
 
 const createEmptySlot = (index) => ({
   src: null,
@@ -19,7 +20,9 @@ const createEmptySlot = (index) => ({
 export default function App() {
   const [format, setFormat] = useState(FORMATS.BADGE); // FORMATS.PFP | FORMATS.BADGE
   const [mode, setMode] = useState("solo"); // "solo" | "team"
+  const [teamSize, setTeamSize] = useState(4); // 1, 2, 3, or 4 members
   const [activeSlotIndex, setActiveSlotIndex] = useState(0); // 0, 1, 2, 3, or "combined"
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   
   const [teamName, setTeamName] = useState("CYBER BUILDERS");
   const [teamCode, setTeamCode] = useState(() => generateTeamCode("GOA"));
@@ -128,6 +131,9 @@ export default function App() {
     });
   }, []);
 
+  // Slice slots dynamically based on active teamSize
+  const activeSlots = slots.slice(0, teamSize);
+
   const {
     canvasRef,
     rendering,
@@ -137,7 +143,7 @@ export default function App() {
   } = useFrameRenderer({
     format,
     mode,
-    slots,
+    slots: activeSlots,
     activeSlotIndex,
     teamName,
     teamCode,
@@ -193,7 +199,7 @@ export default function App() {
         }}
       >
         Generate your official <strong>HH Goa 2026 Builder Badge</strong> with scannable QR verification,
-        funky tech titles, and polite Gen-Z roasts. Built for <strong>Solo Builders</strong> & <strong>Squads of 4</strong>! 🚀
+        funky tech titles, and polite Gen-Z roasts. Built for <strong>Solo Builders</strong> & <strong>Squads of 1 to 4</strong>! 🚀
       </p>
 
       {/* Main Container */}
@@ -226,6 +232,8 @@ export default function App() {
           onTeamNameChange={setTeamName}
           teamCode={teamCode}
           onTeamCodeChange={setTeamCode}
+          teamSize={teamSize}
+          onTeamSizeChange={setTeamSize}
           soloName={soloName}
           soloStack={soloStack}
           onMemberNameChange={handleMemberNameChange}
@@ -235,6 +243,7 @@ export default function App() {
           ready={ready}
           onDownloadCurrent={downloadCurrent}
           onDownloadAllTeamCards={downloadAllTeamCards}
+          onOpenShareModal={() => setIsShareModalOpen(true)}
         />
 
         <PreviewCanvas
@@ -246,6 +255,19 @@ export default function App() {
           teamCode={teamCode}
         />
       </div>
+
+      {/* Share on X Interactive Modal */}
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        mode={mode}
+        activeSlotIndex={activeSlotIndex}
+        slots={activeSlots}
+        teamName={teamName}
+        teamCode={teamCode}
+        soloName={soloName}
+        onDownloadCurrent={downloadCurrent}
+      />
     </div>
   );
 }

@@ -108,24 +108,37 @@ export function drawQRCodeStamp(ctx, x, y, size, qrText, mainColor = "#091D14", 
 }
 
 /**
- * Lays out N photo slots into a grid rect: 1 slot fills it, 2 slots
- * sit side by side, 3-4 slots form a 2x2 grid.
+ * Lays out N photo slots into a poster grid rect: 1 slot fills it, 2 slots
+ * sit side-by-side, 3 slots form 3 vertical columns, 4 slots form a 2x2 grid.
  */
-export function gridLayout(rect, count, gap = 8) {
+export function gridLayout(rect, count, gap = 16) {
   if (count <= 1) return [{ x: rect.x, y: rect.y, w: rect.w, h: rect.h }];
-  const cols = count <= 2 ? count : 2;
-  const rows = Math.ceil(count / cols);
-  const cw = (rect.w - gap * (cols - 1)) / cols;
-  const ch = (rect.h - gap * (rows - 1)) / rows;
-  return Array.from({ length: count }, (_, i) => {
-    const col = i % cols;
-    const row = Math.floor(i / cols);
-    return {
-      x: rect.x + col * (cw + gap),
-      y: rect.y + row * (ch + gap),
-      w: cw,
-      h: ch,
-    };
-  });
+
+  if (count === 2) {
+    const cw = (rect.w - gap) / 2;
+    return [
+      { x: rect.x, y: rect.y, w: cw, h: rect.h },
+      { x: rect.x + cw + gap, y: rect.y, w: cw, h: rect.h },
+    ];
+  }
+
+  if (count === 3) {
+    const cw = (rect.w - gap * 2) / 3;
+    return [
+      { x: rect.x, y: rect.y, w: cw, h: rect.h },
+      { x: rect.x + cw + gap, y: rect.y, w: cw, h: rect.h },
+      { x: rect.x + (cw + gap) * 2, y: rect.y, w: cw, h: rect.h },
+    ];
+  }
+
+  // 4 or default: 2x2 grid
+  const cw = (rect.w - gap) / 2;
+  const ch = (rect.h - gap) / 2;
+  return [
+    { x: rect.x, y: rect.y, w: cw, h: ch },
+    { x: rect.x + cw + gap, y: rect.y, w: cw, h: ch },
+    { x: rect.x, y: rect.y + ch + gap, w: cw, h: ch },
+    { x: rect.x + cw + gap, y: rect.y + ch + gap, w: cw, h: ch },
+  ];
 }
 
