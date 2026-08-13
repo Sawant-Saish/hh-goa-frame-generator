@@ -20,8 +20,8 @@ const createEmptySlot = (index) => ({
 export default function App() {
   const [format, setFormat] = useState(FORMATS.BADGE); // FORMATS.PFP | FORMATS.BADGE
   const [mode, setMode] = useState("solo"); // "solo" | "team"
-  const [teamSize, setTeamSize] = useState(4); // 1, 2, 3, or 4 members
-  const [activeSlotIndex, setActiveSlotIndex] = useState(0); // 0, 1, 2, 3, or "combined"
+  const [teamSize, setTeamSize] = useState(3); // 1, 2, or 3 members max
+  const [activeSlotIndex, setActiveSlotIndex] = useState(0); // 0, 1, 2, or "combined"
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   
   const [teamName, setTeamName] = useState("CYBER BUILDERS");
@@ -34,7 +34,6 @@ export default function App() {
     createEmptySlot(0),
     createEmptySlot(1),
     createEmptySlot(2),
-    createEmptySlot(3),
   ]);
 
   // Read URL query params on mount for shareable Team Links
@@ -199,7 +198,7 @@ export default function App() {
         }}
       >
         Generate your official <strong>HH Goa 2026 Builder Badge</strong> with scannable QR verification,
-        funky tech titles, and polite Gen-Z roasts. Built for <strong>Solo Builders</strong> & <strong>Squads of 1 to 4</strong>! 🚀
+        funky tech titles, and polite Gen-Z roasts. Built for <strong>Solo Builders</strong> & <strong>Squads of 1 to 3</strong>! 🚀
       </p>
 
       {/* Main Container */}

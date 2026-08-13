@@ -44,5 +44,5 @@ export const GENZ_STICKERS = [
   "ABSOLUTE CINEMA 🎬",
 ];
 
-export const MAX_TEAM_SLOTS = 4;
+export const MAX_TEAM_SLOTS = 3;
 

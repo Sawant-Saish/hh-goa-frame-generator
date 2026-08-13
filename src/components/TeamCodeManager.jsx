@@ -8,7 +8,7 @@ export default function TeamCodeManager({
   onTeamNameChange,
   teamCode,
   onTeamCodeChange,
-  teamSize = 4,
+  teamSize = 3,
   onTeamSizeChange,
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -112,10 +112,10 @@ export default function TeamCodeManager({
           {/* Dynamic Team Size Selector */}
           <div style={{ marginBottom: 10 }}>
             <label style={{ display: "block", fontSize: 10, fontWeight: 800, opacity: 0.9, marginBottom: 4 }}>
-              SELECT TEAM SIZE ({teamSize} BUILDERS)
+              SELECT TEAM SIZE ({teamSize} BUILDERS MAX)
             </label>
             <div style={{ display: "flex", gap: 4 }}>
-              {[1, 2, 3, 4].map((num) => {
+              {[1, 2, 3].map((num) => {
                 const isActive = teamSize === num;
                 return (
                   <button
@@ -124,7 +124,7 @@ export default function TeamCodeManager({
                     onClick={() => onTeamSizeChange && onTeamSizeChange(num)}
                     style={{
                       flex: 1,
-                      padding: "5px 4px",
+                      padding: "6px 4px",
                       borderRadius: 6,
                       border: isActive ? `1.5px solid ${COLORS.gold}` : "1px solid rgba(0,0,0,0.15)",
                       background: isActive ? COLORS.pink : "rgba(255,255,255,0.1)",
