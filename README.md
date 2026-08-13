@@ -4,6 +4,8 @@ Upload a photo (or up to 4 for a team shot), it auto-fits into a branded
 frame with no manual cropping, add a name and stack, and download or
 share a finished PNG.
 
+Live deployed app: https://goa-frame-generator.netlify.app/
+
 ## Run it
 
 ```bash
