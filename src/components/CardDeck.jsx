@@ -22,6 +22,16 @@ export default function CardDeck({
 
   const handleCardClick = (targetIndex) => {
     if (activeSlotIndex === targetIndex) return;
+
+    if (targetIndex === "combined") {
+      const activeSlots = slots.slice(0, teamSize);
+      const missingIndex = activeSlots.findIndex((s) => !s || !s.img);
+      if (missingIndex !== -1) {
+        alert(`⚠️ Please upload a builder photo for Member 0${missingIndex + 1} before generating the ${teamSize}-in-1 Squad Poster!`);
+        return;
+      }
+    }
+
     setAnimatingIndex(targetIndex);
     onSelectSlot(targetIndex);
     setTimeout(() => setAnimatingIndex(null), 450);

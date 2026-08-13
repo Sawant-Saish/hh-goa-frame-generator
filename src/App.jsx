@@ -7,6 +7,8 @@ import ControlPanel from "./components/ControlPanel.jsx";
 import PreviewCanvas from "./components/PreviewCanvas.jsx";
 import ShareModal from "./components/ShareModal.jsx";
 
+import PosterShowcaseModal from "./components/PosterShowcaseModal.jsx";
+
 const createEmptySlot = (index) => ({
   src: null,
   img: null,
@@ -266,6 +268,18 @@ export default function App() {
         teamCode={teamCode}
         soloName={soloName}
         onDownloadCurrent={downloadCurrent}
+      />
+
+      {/* Full-Screen Poster Showcase Modal with Heavy Drop Shadow & X Post Option */}
+      <PosterShowcaseModal
+        isOpen={activeSlotIndex === "combined"}
+        onClose={() => setActiveSlotIndex(0)}
+        teamName={teamName}
+        teamCode={teamCode}
+        teamSize={teamSize}
+        canvasRef={canvasRef}
+        onDownloadPoster={downloadCurrent}
+        onOpenShareModal={() => setIsShareModalOpen(true)}
       />
     </div>
   );
