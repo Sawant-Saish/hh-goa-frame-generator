@@ -61,7 +61,7 @@ export default function ModeToggle({ mode, onChange }) {
           boxShadow: mode === "team" ? "0 4px 12px rgba(11,110,62,0.4)" : "none",
         }}
       >
-        <Users size={15} /> Team Squad (2-4)
+        <Users size={15} /> Team Squad (1-3)
       </button>
     </div>
   );

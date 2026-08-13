@@ -192,7 +192,7 @@ export default function CardDeck({
               TEAM {teamName.toUpperCase()}
             </div>
             <div style={{ fontSize: 11, opacity: 0.8, marginTop: 2 }}>
-              Combined 4-Member Squad Grid Badge Poster
+              Combined {teamSize}-Member Squad Grid Badge Poster
             </div>
             <div style={{ fontSize: 10, color: COLORS.pink, fontWeight: 700, marginTop: 4 }}>
               ID: {teamCode}
@@ -296,7 +296,7 @@ export default function CardDeck({
             {/* Quick Card Info summary inside the card */}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 9, fontWeight: 800, color: COLORS.green, textTransform: "uppercase" }}>
-                {isTeam ? `CARD 0${currentSlotIndex + 1} OF 04` : "SOLO BUILDER CARD"}
+                {isTeam ? `CARD 0${currentSlotIndex + 1} OF 0${teamSize}` : "SOLO BUILDER CARD"}
               </div>
 
               <div
