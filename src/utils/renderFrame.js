@@ -1,5 +1,5 @@
 import { CANVAS_SIZE, BORDER, STRIP_H, COLORS } from "../constants.js";
-import { drawCover, drawBracket, gridLayout } from "./canvasDraw.js";
+import { drawCover, drawFaceCover, drawBracket, gridLayout } from "./canvasDraw.js";
 import { builderClass, idSerial } from "./identity.js";
 
 /**
@@ -45,7 +45,17 @@ function drawPhotos(ctx, area, validSlots) {
     return;
   }
   const rects = gridLayout(area, validSlots.length);
-  validSlots.forEach((slot, i) => drawCover(ctx, slot.img, rects[i].x, rects[i].y, rects[i].w, rects[i].h));
+  validSlots.forEach((slot, i) => {
+    const r = rects[i];
+    if (slot.face) {
+      drawFaceCover(ctx, slot.img, slot.face, r.x, r.y, r.w, r.h);
+    } else {
+      // Shouldn't happen in normal flow (a slot only gets set after a
+      // face is confirmed), but fall back to a plain center-crop
+      // rather than failing the render.
+      drawCover(ctx, slot.img, r.x, r.y, r.w, r.h);
+    }
+  });
 }
 
 function drawDuotoneOverlay(ctx, area) {

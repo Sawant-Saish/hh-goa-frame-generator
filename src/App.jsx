@@ -1,45 +1,83 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { COLORS, MAX_TEAM_SLOTS } from "./constants.js";
 import { loadImage } from "./utils/canvasDraw.js";
+import { detectFaces, preloadFaceModel } from "./utils/faceDetection.js";
 import { useFrameRenderer } from "./hooks/useFrameRenderer.js";
 import ControlPanel from "./components/ControlPanel.jsx";
 import PreviewCanvas from "./components/PreviewCanvas.jsx";
 
+const NO_FACE_MESSAGE = "No human face detected in that photo. Upload a clear photo of a face to continue.";
+const READ_ERROR_MESSAGE = "Couldn't read that image. Try a different file.";
+
+function resizeToLength(arr, length, fill = null) {
+  const next = arr.slice(0, length);
+  while (next.length < length) next.push(fill);
+  return next;
+}
+
 export default function App() {
   const [mode, setMode] = useState("solo"); // "solo" | "team"
   const [slots, setSlots] = useState([null]);
+  const [verifying, setVerifying] = useState([false]);
+  const [errors, setErrors] = useState([null]);
   const [name, setName] = useState("");
   const [stack, setStack] = useState("");
 
   const maxSlots = mode === "team" ? MAX_TEAM_SLOTS : 1;
 
-  // Resize the slots array to match the active mode, preserving
-  // any photos already in the kept slots.
+  // Warm up the face-detection model in the background so the first
+  // upload doesn't stall on a cold model load.
   useEffect(() => {
-    setSlots((prev) => {
-      const next = prev.slice(0, maxSlots);
-      while (next.length < maxSlots) next.push(null);
+    preloadFaceModel();
+  }, []);
+
+  // Resize the per-slot arrays to match the active mode, preserving
+  // any photos/state already in the kept slots.
+  useEffect(() => {
+    setSlots((prev) => resizeToLength(prev, maxSlots));
+    setVerifying((prev) => resizeToLength(prev, maxSlots, false));
+    setErrors((prev) => resizeToLength(prev, maxSlots));
+  }, [maxSlots]);
+
+  const setAt = (setter) => (index, value) =>
+    setter((prev) => {
+      const next = [...prev];
+      next[index] = value;
       return next;
     });
-  }, [maxSlots]);
 
   const handleFileSelected = useCallback(async (index, file) => {
     if (!file) return;
-    const src = URL.createObjectURL(file);
-    const img = await loadImage(src);
-    setSlots((prev) => {
-      const next = [...prev];
-      next[index] = { src, img };
-      return next;
-    });
+
+    setAt(setErrors)(index, null);
+    setAt(setVerifying)(index, true);
+
+    let src;
+    try {
+      src = URL.createObjectURL(file);
+      const img = await loadImage(src);
+      const faces = await detectFaces(img);
+
+      if (faces.length === 0) {
+        URL.revokeObjectURL(src);
+        setAt(setErrors)(index, NO_FACE_MESSAGE);
+        return;
+      }
+
+      // Face-only, auto-cropped: store the top face so renderFrame
+      // can crop/center on it instead of the image's raw center.
+      setAt(setSlots)(index, { src, img, face: faces[0] });
+    } catch (err) {
+      if (src) URL.revokeObjectURL(src);
+      setAt(setErrors)(index, READ_ERROR_MESSAGE);
+    } finally {
+      setAt(setVerifying)(index, false);
+    }
   }, []);
 
   const handleClearSlot = useCallback((index) => {
-    setSlots((prev) => {
-      const next = [...prev];
-      next[index] = null;
-      return next;
-    });
+    setAt(setSlots)(index, null);
+    setAt(setErrors)(index, null);
   }, []);
 
   const { canvasRef, rendering, ready, download } = useFrameRenderer({ slots, name, stack });
@@ -103,6 +141,8 @@ export default function App() {
           mode={mode}
           onModeChange={setMode}
           slots={slots}
+          verifying={verifying}
+          errors={errors}
           onFileSelected={handleFileSelected}
           onClearSlot={handleClearSlot}
           name={name}

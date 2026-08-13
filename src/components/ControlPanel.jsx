@@ -9,6 +9,8 @@ export default function ControlPanel({
   mode,
   onModeChange,
   slots,
+  verifying,
+  errors,
   onFileSelected,
   onClearSlot,
   name,
@@ -30,7 +32,14 @@ export default function ControlPanel({
       }}
     >
       <ModeToggle mode={mode} onChange={onModeChange} />
-      <PhotoSlots slots={slots} mode={mode} onFileSelected={onFileSelected} onClearSlot={onClearSlot} />
+      <PhotoSlots
+        slots={slots}
+        mode={mode}
+        verifying={verifying}
+        errors={errors}
+        onFileSelected={onFileSelected}
+        onClearSlot={onClearSlot}
+      />
       <DetailsForm name={name} stack={stack} onNameChange={onNameChange} onStackChange={onStackChange} />
       <ActionButtons mode={mode} name={name} ready={ready} onDownload={onDownload} />
     </div>

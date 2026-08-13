@@ -25,6 +25,43 @@ export function drawCover(ctx, img, x, y, w, h) {
 }
 
 /**
+ * Draws `img` into the target rect, cropping around a detected face
+ * rather than the image's geometric center. This is what makes the
+ * ID card framing consistent (face roughly centered, room for
+ * shoulders below) no matter where the subject sits in the original
+ * photo or what its aspect ratio is.
+ *
+ * `face` is a bounding box in the image's natural pixel coordinates:
+ * { x, y, width, height }, as returned by detectFaces().
+ */
+export function drawFaceCover(ctx, img, face, x, y, w, h) {
+  const targetAspect = w / h;
+
+  // Frame the crop relative to face size: tall enough to read as a
+  // head-and-shoulders portrait rather than a tight face crop.
+  const PAD_FACTOR = 2.6;
+  let cropH = Math.min(face.height * PAD_FACTOR, img.height);
+  let cropW = cropH * targetAspect;
+  if (cropW > img.width) {
+    cropW = img.width;
+    cropH = cropW / targetAspect;
+  }
+
+  const faceCenterX = face.x + face.width / 2;
+  // Anchor slightly above the face's vertical center so there's more
+  // breathing room below the chin than above the hairline.
+  const faceCenterY = face.y + face.height * 0.42;
+
+  let sx = faceCenterX - cropW / 2;
+  let sy = faceCenterY - cropH / 2;
+
+  sx = Math.max(0, Math.min(sx, img.width - cropW));
+  sy = Math.max(0, Math.min(sy, img.height - cropH));
+
+  ctx.drawImage(img, sx, sy, cropW, cropH, x, y, w, h);
+}
+
+/**
  * Draws one L-shaped corner bracket (viewfinder/terminal motif) at
  * (x, y), rotated by `rot` radians so the same function covers all
  * four corners.
